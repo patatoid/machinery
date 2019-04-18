@@ -86,6 +86,34 @@ defmodule Machinery do
   end
 
   @doc """
+  Return true if `struct` can transition to `next_state` false otherwise. This method is not tested.
+
+  ## Parameters
+
+    - `struct`: The `struct` you want to transit to another state.
+    - `state_machine_module`: The module that holds the state machine logic, where Machinery as imported.
+    - `next_state`: String of the next state you want to validate.
+
+  ## Examples
+
+      Machinery.can_transition_to(%User{state: :partial}, UserStateMachine, :completed)
+      true
+  """
+  @spec transition_to(struct, module, String.t()) :: Boolean.t()
+  def can_transition_to?(struct, state_machine_module, next_state) do
+    GenServer.call(Machinery.Transitions, {
+      :test,
+      struct,
+      state_machine_module,
+      next_state
+    })
+  catch
+    :exit, error_tuple ->
+      exception = deep_first_of_tuple(error_tuple)
+      raise exception
+  end
+
+  @doc """
   Triggers the transition of a struct to a new state, accordinly to a specific
   state machine module, if it passes any existing guard functions.
   It also runs any before or after callbacks and returns a tuple with

@@ -20,6 +20,34 @@ defmodule Machinery.Transitions do
   end
 
   @doc false
+  def handle_call({:test, struct, state_machine_module, next_state}, _from, states) do
+    initial_state = state_machine_module._machinery_initial_state()
+    transitions = state_machine_module._machinery_transitions()
+
+    # Getting current state of the struct or falling back to the
+    # first declared state on the struct model.
+    current_state = case Map.get(struct, state_machine_module._field()) do
+      nil -> initial_state
+      current_state -> current_state
+    end
+
+    # Checking declared transitions and guard functions before
+    # actually updating the struct and retuning the tuple.
+    declared_transition? = Transition.declared_transition?(transitions, current_state, next_state)
+    guarded_transition? = Transition.guarded_transition?(state_machine_module, struct, next_state)
+
+    response = cond do
+      !declared_transition? ->
+        false
+      guarded_transition? ->
+        false
+      true ->
+        true
+    end
+    {:reply, response, states}
+  end
+
+  @doc false
   def handle_call({:run, struct, state_machine_module, next_state}, _from, states) do
     initial_state = state_machine_module._machinery_initial_state()
     transitions = state_machine_module._machinery_transitions()
